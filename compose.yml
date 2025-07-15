@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mariadb:latest
+    restart: always
+    container_name: db_rental
+    environment:
+      MYSQL_ROOT_PASSWORD: qwe123poi
+      MYSQL_DATABASE: br-rental-car
+      MYSQL_USER: default_user
+      MYSQL_PASSWORD: qwe123poi
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
