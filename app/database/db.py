@@ -40,7 +40,7 @@ class Database:
         É aqui que fechamos tudo, não importa o que aconteça.
         """
         if self._conn and self._conn.is_connected():
-            self._cursor.close()
+            self._cursor.close() # type: ignore
             self._conn.close()
             print("Conexão com o MariaDB fechada.")
 
@@ -49,25 +49,36 @@ class Database:
         Executa uma query que não retorna dados (INSERT, UPDATE, DELETE).
         Sempre use parâmetros para evitar SQL Injection!
         """
+        if self._cursor is None or self._conn is None:
+            raise RuntimeError("Database connection or cursor is not initialized. Use the context manager (with Database() as db: ...)")
         self._cursor.execute(sql, params or ())
         self._conn.commit()
-        return self._cursor.lastrowid()
-    
+
+
     def fetchall(self, sql, params=None):
         """Busca todos os resultados de uma query (SELECT)."""
+        if self._cursor is None:
+            raise RuntimeError("Database cursor is not initialized. Use the context manager (with Database() as db: ...)")
         self._cursor.execute(sql, params or ())
-        return self._cursor.fetchall()
+
 
     def fetchone(self, sql, params=None):
         """Busca o primeiro resultado de uma query (SELECT)."""
+        if self._cursor is None:
+            raise RuntimeError("Database cursor is not initialized. Use the context manager (with Database() as db: ...)")
         self._cursor.execute(sql, params or ())
-        return self._cursor.fetchone()
+
 
     def commit(self):
         """Commits the current transaction to the database."""
+        if self._conn is None:
+            raise RuntimeError("Database connection is not initialized. Use the context manager (with Database() as db: ...)")
         self._conn.commit()
+        
 
     def rollback(self):
         """Rolls back the current transaction."""
+        if self._conn is None:
+            raise RuntimeError("Database connection is not initialized. Use the context manager (with Database() as db: ...)")
         self._conn.rollback()
-    
+
