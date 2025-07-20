@@ -1,9 +1,13 @@
 from fastapi import FastAPI
-from .routers import users, vehicles, employee, rental
+from .routers import user, vehicles, employee, rental
+
+
+
 
 app = FastAPI()
 
-app.include_router(users.router)
+
+app.include_router(user.router)
 app.include_router(vehicles.router)
 app.include_router(employee.router)
 app.include_router(rental.router)
