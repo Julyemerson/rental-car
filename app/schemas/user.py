@@ -4,7 +4,6 @@ from typing import Optional, List
 
 class UserBase(BaseModel):
     "Modelo base para os usuários. Contém os campos comuns."
-    id: int
     name: str
     last_name: str
     cpf: str
