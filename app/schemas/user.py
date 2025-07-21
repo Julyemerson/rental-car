@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr
 from datetime import date
-from typing import Optional, List
+from typing import Optional
 
 class UserBase(BaseModel):
     "Modelo base para os usuários. Contém os campos comuns."

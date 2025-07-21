@@ -21,7 +21,7 @@ async def get_all_users(user_repo: UserRepository = Depends(get_user_repo)):
 async def create_user(user: UserCreate, user_repo: UserRepository = Depends(get_user_repo)):
     return await user_repo.create(user)
 
-@router.get("/{user_id}", response_model=UserInDB, status_code=status.HTTP_201_CREATED)
+@router.get("/{user_id}", response_model=UserInDB, status_code=status.HTTP_200_OK)
 async def get_user_by_id(user_id: int, user_repo: UserRepository = Depends(get_user_repo)):
     user = await user_repo.get_by_id(user_id)
     if not user:
@@ -29,7 +29,7 @@ async def get_user_by_id(user_id: int, user_repo: UserRepository = Depends(get_u
     return user
 
 
-@router.put("/{user_id}", response_model=UserInDB)
+@router.put("/{user_id}", response_model=UserInDB, status_code=status.HTTP_200_OK)
 async def update_user(user_id: int, user_update: UserUpdate, user_repo: UserRepository = Depends(get_user_repo)):
     updated_user = await user_repo.update(user_id, user_update)
     if not updated_user:
