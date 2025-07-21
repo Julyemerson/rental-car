@@ -3,14 +3,7 @@ from .base_repository import BaseRepository
 from ..schemas.vehicles import VehicleCreate, VehicleUpdate, VehicleInDB
 
 class VehicleRepository(BaseRepository):
-    """
-    Repositório para operações de veículos.
-    Herda a lógica de execução de queries do BaseRepository.
-    """
     async def get_all(self) -> List[VehicleInDB]:
-        """
-        Busca todos os veículos cadastrados no banco de dados.
-        """
         query = "SELECT * FROM vehicle;"
         records = await self._execute_query(query, fetch='all')
         return [VehicleInDB(**record) for record in records] if records else []

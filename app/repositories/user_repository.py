@@ -4,9 +4,7 @@ from .base_repository import BaseRepository
 from ..schemas.user import UserCreate, UserUpdate, UserInDB
 
 class UserRepository(BaseRepository):
-    def __init__(self, pool):
-        self.pool = pool
-
+    
     async def get_all(self) -> List[UserInDB]:
         query = "SELECT id, name, last_name, cpf, email, birth_at FROM user;"
         records = await self._execute_query(query, fetch='all')

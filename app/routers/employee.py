@@ -1,85 +1,71 @@
-from fastapi import APIRouter, HTTPException
+# /app/routers/employee.py
+
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List
+
+# Import Pydantic models and the Repository
+# Note: Ensure these schemas exist, for example in /app/schemas/employee.py
+from ..schemas.employee import CreateEmployee, UpdateEmployee, EmployeeInDB
+from ..repositories.employee_repository import EmployeeRepository
+
+# Import the dependency function
+# Note: You will need to create this function in your dependencies file.
+from ..dependencies.dependencies import get_employee_repo
 
 router = APIRouter(
-    prefix="/employee",
+    prefix="/employee", # Using plural is a common REST convention
     tags=["employee"],
     responses={404: {"description": "Employee not found"}},
 )
 
-mock_db_employees = {
-    1: {
-        "id": 1,
-        "name": "Jerry",
-        "last_name": "Smith",
-        "cpf": "11122233344",
-        "email": "jerry.smith@email.com",
-        "role": "Sales Associate"
-    },
-    2: {
-        "id": 2,
-        "name": "Beth",
-        "last_name": "Smith",
-        "cpf": "55566677788",
-        "email": "beth.smith@email.com",
-        "role": "Manager"
-    },
-}
+
+@router.get("/", response_model=List[EmployeeInDB])
+async def get_all_employees(
+    employee_repo: EmployeeRepository = Depends(get_employee_repo)
+):
+    return await employee_repo.get_all()
 
 
-@router.get("/")
-async def get_all_employees():
-    """
-    Retorna uma lista de todos os funcionários cadastrados.
-    """
-    return list(mock_db_employees.values())
+@router.post("/", response_model=EmployeeInDB, status_code=status.HTTP_201_CREATED)
+async def create_employee(
+    employee: CreateEmployee, 
+    employee_repo: EmployeeRepository = Depends(get_employee_repo)
+):
+    return await employee_repo.create(employee)
 
 
-@router.post("/")
-async def create_employee(employee: dict):
+@router.get("/{employee_id}", response_model=EmployeeInDB)
+async def get_employee_by_id(
+    employee_id: int, 
+    employee_repo: EmployeeRepository = Depends(get_employee_repo)
+):
     """
-    Cria um novo funcionário.
-    O corpo da requisição deve ser um JSON com os dados do funcionário.
-    Ex: {"name": "Bird", "last_name": "Person", "email": "bird.person@email.com", ...}
+    Retrieves a single employee by their ID.
     """
-    new_id = max(mock_db_employees.keys() or [0]) + 1
-    new_employee = {"id": new_id, **employee}
-    mock_db_employees[new_id] = new_employee
-    return {"message": "Employee created successfully", "employee_id": new_id}
-
-
-@router.get("/{employee_id}")
-async def get_employee_by_id(employee_id: int):
-    """
-    Retorna os detalhes de um funcionário específico pelo seu ID.
-    """
-    employee = mock_db_employees.get(employee_id)
-    if not employee:
+    db_employee = await employee_repo.get_by_id(employee_id)
+    if db_employee is None:
         raise HTTPException(status_code=404, detail="Employee not found")
-    return employee
+    return db_employee
 
 
-@router.put("/{employee_id}")
-async def update_employee(employee_id: int, employee_update: dict):
-    """
-    Atualiza os dados de um funcionário existente.
-    """
-    if employee_id not in mock_db_employees:
+@router.put("/{employee_id}", response_model=EmployeeInDB)
+async def update_employee(
+    employee_id: int, 
+    employee_update: UpdateEmployee, 
+    employee_repo: EmployeeRepository = Depends(get_employee_repo)
+):
+    updated_employee = await employee_repo.update(employee_id, employee_update)
+    if updated_employee is None:
         raise HTTPException(status_code=404, detail="Employee not found")
+    return updated_employee
 
 
-    mock_db_employees[employee_id].update(employee_update)
-    return {"message": "Employee updated successfully", "data": mock_db_employees[employee_id]}
-
-
-@router.delete("/{employee_id}")
-async def delete_employee(employee_id: int):
-    """
-    Remove um funcionário do sistema.
-    """
-    if employee_id not in mock_db_employees:
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_employee(
+    employee_id: int, 
+    employee_repo: EmployeeRepository = Depends(get_employee_repo)
+):
+    success = await employee_repo.delete(employee_id)
+    if not success:
         raise HTTPException(status_code=404, detail="Employee not found")
-
-    # Em uma aplicação real, você faria um DELETE no banco de dados.
-    del mock_db_employees[employee_id]
-
-    return {"message": "Employee deleted successfully", "employee_id": employee_id}
+    return None
