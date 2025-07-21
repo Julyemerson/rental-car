@@ -1,7 +1,7 @@
 import aiomysql
 from typing import List, Optional
 from .base_repository import BaseRepository
-from ..schemas.rental import RentalCreate, RentalUpdate, RentalInDB
+from ..schemas.rental import RentalCreate, RentalUpdate, RentalInDB, VehicleRentalCount, RentalReport
 
 class RentalRepository(BaseRepository):
     async def get_all(self) -> List[RentalInDB]:
@@ -53,3 +53,37 @@ class RentalRepository(BaseRepository):
         await self._execute_query(query, params=(rental_id,))
         
         return await self.get_by_id(rental_id) is None
+    
+    async def get_summary_report(self) -> RentalReport:
+        """
+        Gera um relatório de resumo com faturamento total e veículos mais alugados.
+        """
+        # Query 1: Calcular o faturamento total
+        revenue_query = "SELECT SUM(rent_value) as total FROM rental;"
+        revenue_result = await self._execute_query(revenue_query, fetch='one')
+        total_revenue = revenue_result['total'] if revenue_result and revenue_result['total'] else 0
+
+        # Query 2: Contar aluguéis por veículo e juntar com a tabela de veículos
+        # para obter os nomes, ordenando pelos mais alugados.
+        count_query = """
+            SELECT 
+                r.id_vehicle, 
+                v.brand, 
+                v.model, 
+                COUNT(r.id_vehicle) as rental_count
+            FROM rental r
+            JOIN vehicle v ON r.id_vehicle = v.id
+            GROUP BY r.id_vehicle, v.brand, v.model
+            ORDER BY rental_count DESC
+            LIMIT 5;
+        """
+        count_records = await self._execute_query(count_query, fetch='all')
+        
+        # Constrói a lista de veículos mais alugados
+        most_rented = [VehicleRentalCount(**record) for record in (count_records or [])]
+        
+        # Retorna o objeto de relatório completo
+        return RentalReport(
+            total_revenue=total_revenue,
+            most_rented_vehicle=most_rented
+        )

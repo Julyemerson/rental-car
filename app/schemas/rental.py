@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 class RentalBase(BaseModel):
@@ -44,3 +44,14 @@ class RentalUpdate(BaseModel):
 class RentalInDB(RentalBase):
     """Model representing a rental as it exists in the database."""
     id: int
+
+class VehicleRentalCount(BaseModel):
+    """Model to represent the count of rentals for a specific vehicle."""
+    id_vehicle: int = Field(..., gt=0, examples=[2])
+    model: str
+    brand: str
+    rental_count: int = Field(..., ge=0, description="Number of rentals for the vehicle.")
+    
+class RentalReport(BaseModel):
+    total_revenue: int = Field(..., ge=0, description="Total revenue from rentals in cents.")
+    most_rented_vehicle: list[VehicleRentalCount]

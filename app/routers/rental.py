@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
-from ..schemas.rental import RentalCreate, RentalUpdate, RentalInDB
+from ..schemas.rental import RentalCreate, RentalUpdate, RentalInDB, RentalReport
 from ..repositories.rental_repository import RentalRepository
 from ..dependencies.dependencies import get_rental_repo
 
@@ -25,6 +25,12 @@ async def create_rental(
 ):
     return await rental_repo.create(rental)
 
+
+@router.get("/reports/summary", response_model=RentalReport)
+async def get_rental_summary_report(
+    rental_repo: RentalRepository = Depends(get_rental_repo)
+):
+    return await rental_repo.get_summary_report()
 
 @router.get("/{rental_id}", response_model=RentalInDB)
 async def get_rental_by_id(
