@@ -1,19 +1,11 @@
-# /app/routers/employee.py
-
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
-
-# Import Pydantic models and the Repository
-# Note: Ensure these schemas exist, for example in /app/schemas/employee.py
 from ..schemas.employee import CreateEmployee, UpdateEmployee, EmployeeInDB
 from ..repositories.employee_repository import EmployeeRepository
-
-# Import the dependency function
-# Note: You will need to create this function in your dependencies file.
 from ..dependencies.dependencies import get_employee_repo
 
 router = APIRouter(
-    prefix="/employee", # Using plural is a common REST convention
+    prefix="/employee", 
     tags=["employee"],
     responses={404: {"description": "Employee not found"}},
 )

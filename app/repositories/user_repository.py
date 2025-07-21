@@ -1,4 +1,3 @@
-import aiomysql
 from typing import List, Optional
 from .base_repository import BaseRepository
 from ..schemas.user import UserCreate, UserUpdate, UserInDB

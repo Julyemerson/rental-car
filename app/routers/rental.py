@@ -1,98 +1,60 @@
-from fastapi import APIRouter, HTTPException
-from datetime import date
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List
+from ..schemas.rental import RentalCreate, RentalUpdate, RentalInDB
+from ..repositories.rental_repository import RentalRepository
+from ..dependencies.dependencies import get_rental_repo
 
-# --- Configuração do Router ---
 router = APIRouter(
-    prefix="/rental",
+    prefix="/rental", #
     tags=["rental"],
     responses={404: {"description": "Rental not found"}},
 )
 
 
-# Os IDs de usuário, veículo e funcionário referenciam os dados
-# que criamos nos outros arquivos de rotas.
-mock_db_rentals = {
-    1: {
-        "id": 1,
-        "rent_date": "2024-07-20",
-        "return_date": "2024-07-25",
-        "rent_value": 475, # 95.00 * 5 dias
-        "id_user": 1, # Rick Sanchez
-        "id_vehicle": 1, # Fiat Mobi
-        "id_employee": 1 # Jerry Smith
-    },
-    2: {
-        "id": 2,
-        "rent_date": "2024-07-21",
-        "return_date": "2024-07-28",
-        "rent_value": 560, # 80.00 * 7 dias
-        "id_user": 2, # Morty Smith
-        "id_vehicle": 2, # Honda CB 500F
-        "id_employee": 2 # Beth Smith
-    },
-}
+@router.get("/", response_model=List[RentalInDB])
+async def get_all_rentals(
+    rental_repo: RentalRepository = Depends(get_rental_repo)
+):
+    return await rental_repo.get_all()
 
 
-@router.get("/")
-async def get_all_rentals():
-    """
-    Retorna uma lista de todos os aluguéis cadastrados.
-    """
-    return list(mock_db_rentals.values())
+@router.post("/", response_model=RentalInDB, status_code=status.HTTP_201_CREATED)
+async def create_rental(
+    rental: RentalCreate, 
+    rental_repo: RentalRepository = Depends(get_rental_repo)
+):
+    return await rental_repo.create(rental)
 
 
-@router.post("/")
-async def create_rental(rental: dict):
-    """
-    Cria um novo registro de aluguel.
-    O corpo da requisição deve ser um JSON com os dados do aluguel.
-    Ex: {"return_date": "2024-08-10", "rent_value": 500, "id_user": 1, ...}
-    """
-    # Em um app real, você inseriria no banco de dados aqui.
-    new_id = max(mock_db_rentals.keys() or [0]) + 1
-    
-    # Adiciona a data de aluguel padrão se não for fornecida
-    if "rent_date" not in rental:
-        rental["rent_date"] = date.today().isoformat()
-
-    new_rental = {"id": new_id, **rental}
-    mock_db_rentals[new_id] = new_rental
-    return {"message": "Rental created successfully", "rental_id": new_id}
-
-
-@router.get("/{rental_id}")
-async def get_rental_by_id(rental_id: int):
-    """
-    Retorna os detalhes de um aluguel específico pelo seu ID.
-    """
-    rental = mock_db_rentals.get(rental_id)
-    if not rental:
+@router.get("/{rental_id}", response_model=RentalInDB)
+async def get_rental_by_id(
+    rental_id: int, 
+    rental_repo: RentalRepository = Depends(get_rental_repo)
+):
+    db_rental = await rental_repo.get_by_id(rental_id)
+    if db_rental is None:
         raise HTTPException(status_code=404, detail="Rental not found")
-    return rental
+    return db_rental
 
 
-@router.put("/{rental_id}")
-async def update_rental(rental_id: int, rental_update: dict):
-    """
-    Atualiza os dados de um aluguel existente.
-    """
-    if rental_id not in mock_db_rentals:
+@router.put("/{rental_id}", response_model=RentalInDB)
+async def update_rental(
+    rental_id: int, 
+    rental_update: RentalUpdate, 
+    rental_repo: RentalRepository = Depends(get_rental_repo)
+):
+    updated_rental = await rental_repo.update(rental_id, rental_update)
+    if updated_rental is None:
         raise HTTPException(status_code=404, detail="Rental not found")
-
-    # Em uma aplicação real, você faria um UPDATE no banco de dados.
-    mock_db_rentals[rental_id].update(rental_update)
-    return {"message": "Rental updated successfully", "data": mock_db_rentals[rental_id]}
+    return updated_rental
 
 
-@router.delete("/{rental_id}")
-async def delete_rental(rental_id: int):
-    """
-    Remove um registro de aluguel do sistema.
-    """
-    if rental_id not in mock_db_rentals:
+@router.delete("/{rental_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_rental(
+    rental_id: int, 
+    rental_repo: RentalRepository = Depends(get_rental_repo)
+):
+    success = await rental_repo.delete(rental_id)
+    if not success:
         raise HTTPException(status_code=404, detail="Rental not found")
-
-    # Em uma aplicação real, você faria um DELETE no banco de dados.
-    del mock_db_rentals[rental_id]
-
-    return {"message": "Rental deleted successfully", "rental_id": rental_id}
+    return None
